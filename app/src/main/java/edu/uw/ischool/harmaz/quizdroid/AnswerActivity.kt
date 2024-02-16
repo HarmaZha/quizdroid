@@ -17,15 +17,18 @@ class AnswerActivity : AppCompatActivity() {
         val questionCount = findViewById<TextView>(R.id.aPageQuestionCount)
         val questionText = findViewById<TextView>(R.id.aPageQuestion)
 
-        val selectedTopic = intent?.extras?.getSerializable(TOPIC_EXTRA) as Topic
+        val selectedTopicIndex = intent?.extras?.getInt(TOPIC_INDEX_EXTRA) as Int
+        val topicRepository = (application as QuizApp).getTopicRepository()
+        val selectedTopic = topicRepository.getTopic(selectedTopicIndex)
+
         val selectedOptionNum = intent?.extras?.getInt(SELECTION_OPTION_EXTRA) as Int
         var currentQuestionNum = intent?.extras?.getInt(QUESTION_NUM_EXTRA) as Int
 
-        val questions = selectedTopic.questions
-        val currentQuestion = questions[currentQuestionNum]
-        Log.i(TAG, "AnswerActivity Topic.questions: $currentQuestion")
+        val currentQuestion = topicRepository.getQuiz(selectedTopicIndex, currentQuestionNum)
+        Log.i(TAG, "AnswerActivity current question: $currentQuestion")
 
-        questionCount.text = getString(R.string.question_count, currentQuestionNum + 1, questions.size)
+        val totalQuestions = selectedTopic.questions.size
+        questionCount.text = getString(R.string.question_count, currentQuestionNum + 1, totalQuestions)
         questionText.text = currentQuestion.question
 
         // add the answer options
@@ -77,7 +80,7 @@ class AnswerActivity : AppCompatActivity() {
 
         // handle next question or finish quiz + update score at the top of the page
         val btnNext = findViewById<Button>(R.id.aPageBtnNext)
-        if (currentQuestionNum + 1 < questions.size) {
+        if (currentQuestionNum + 1 < totalQuestions) {
             // next question
             score.text = getString(R.string.current_score, numCorrectAnswers, currentQuestionNum + 1)
 
@@ -85,7 +88,7 @@ class AnswerActivity : AppCompatActivity() {
             btnNext.setOnClickListener {
                 val context = it.context
                 val intent = Intent(context, QuestionActivity::class.java)
-                intent.putExtra(TOPIC_EXTRA, selectedTopic)
+                intent.putExtra(TOPIC_INDEX_EXTRA, selectedTopicIndex)
                 currentQuestionNum++
                 intent.putExtra(QUESTION_NUM_EXTRA, currentQuestionNum)
                 intent.putExtra(CORRECT_NUM_EXTRA, numCorrectAnswers)

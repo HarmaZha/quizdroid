@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
@@ -13,22 +14,25 @@ class OverviewActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_overview)
 
-        // add the topic title and description
+        // add the topic image, title, and description
+        val image = findViewById<ImageView>(R.id.overviewImage)
         val title = findViewById<TextView>(R.id.topic)
         val description = findViewById<TextView>(R.id.description)
 
-        val selectedTopic = intent?.extras?.getSerializable(TOPIC_EXTRA) as Topic
+        val selectedTopicIndex = intent?.extras?.getInt(TOPIC_INDEX_EXTRA) as Int
+        val selectedTopic = (application as QuizApp).getTopicRepository().getTopic(selectedTopicIndex)
         Log.i(TAG, "OverviewActivity Topic: $selectedTopic")
 
-        title.text = selectedTopic.name
-        description.text = selectedTopic.description
+        image.setImageResource(selectedTopic.iconId)
+        title.text = selectedTopic.title
+        description.text = "${selectedTopic.longDescription} ${getString(R.string.common_description_msg)} ${selectedTopic.questions.size}"
 
         // add event listener to button
         val btnBegin = findViewById<Button>(R.id.btnBegin)
         btnBegin.setOnClickListener {
             val context = it.context
             val intent = Intent(context, QuestionActivity::class.java)
-            intent.putExtra(TOPIC_EXTRA, selectedTopic)
+            intent.putExtra(TOPIC_INDEX_EXTRA, selectedTopicIndex)
             intent.putExtra(QUESTION_NUM_EXTRA, 0)
             intent.putExtra(CORRECT_NUM_EXTRA, 0)
             context.startActivity(intent)

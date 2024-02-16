@@ -22,15 +22,17 @@ class QuestionActivity : AppCompatActivity() {
         val questionCount = findViewById<TextView>(R.id.qPageQuestionCount)
         val questionText = findViewById<TextView>(R.id.qPageQuestion)
 
-        val selectedTopic = intent?.extras?.getSerializable(TOPIC_EXTRA) as Topic
+        val selectedTopicIndex = intent?.extras?.getInt(TOPIC_INDEX_EXTRA) as Int
+        val topicRepository = (application as QuizApp).getTopicRepository()
+        val selectedTopic = topicRepository.getTopic(selectedTopicIndex)
+
         val currentQuestionNum = intent?.extras?.getInt(QUESTION_NUM_EXTRA) as Int
         val numCorrectAnswers = intent?.extras?.getInt(CORRECT_NUM_EXTRA) as Int
 
-        val questions = selectedTopic.questions
-        val currentQuestion = questions[currentQuestionNum]
-        Log.i(TAG, "QuestionActivity Topic.questions: $currentQuestion")
+        val currentQuestion = topicRepository.getQuiz(selectedTopicIndex, currentQuestionNum)
+        Log.i(TAG, "QuestionActivity current question: $currentQuestion")
 
-        questionCount.text = getString(R.string.question_count, currentQuestionNum + 1, questions.size)
+        questionCount.text = getString(R.string.question_count, currentQuestionNum + 1, selectedTopic.questions.size)
         questionText.text = currentQuestion.question
 
         // add the answer options
@@ -60,7 +62,7 @@ class QuestionActivity : AppCompatActivity() {
         btnSubmit.setOnClickListener {
             val context = it.context
             val intent = Intent(context, AnswerActivity::class.java)
-            intent.putExtra(TOPIC_EXTRA, selectedTopic)
+            intent.putExtra(TOPIC_INDEX_EXTRA, selectedTopicIndex)
             intent.putExtra(QUESTION_NUM_EXTRA, currentQuestionNum)
             intent.putExtra(CORRECT_NUM_EXTRA, numCorrectAnswers)
             intent.putExtra(SELECTION_OPTION_EXTRA, selectedAnswer)
