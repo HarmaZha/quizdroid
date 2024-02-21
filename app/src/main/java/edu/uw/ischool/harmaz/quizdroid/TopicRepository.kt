@@ -1,126 +1,71 @@
 package edu.uw.ischool.harmaz.quizdroid
 
+import android.os.Environment
+import android.util.Log
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.io.File
+import java.io.FileReader
+import java.io.FileWriter
+
 interface TopicRepository {
+    fun updateData()
     fun getTopics(): List<Topic>
     fun getTopic(topicIndex: Int): Topic
     fun getQuiz(topicIndex: Int, quizIndex: Int): Quiz
 
+    // These are not used for HW 8, but they do have unit tests as part of the extra credit
+    fun saveTopic(newTopic: Topic)
+    fun saveQuiz(topicIndex: Int, newQuiz: Quiz)
 }
 
-data class Topic(var title: String, var shortDescription: String, var longDescription: String, var questions: MutableList<Quiz>, var iconId: Int)
+data class Topic(var title: String, var desc: String, var questions: MutableList<Quiz>)
 
-data class Quiz(var question: String, var options: List<String>, var correctAnswer: Int)
+data class Quiz(var text: String, var answers: List<String>, var answer: Int)
 
-class TopicRepositoryImpl : TopicRepository {
-    private var topics: MutableList<Topic>
+class TopicRepositoryImpl() : TopicRepository {
+    private var topics: MutableList<Topic> = mutableListOf()
+    private val filePath =
+        "${Environment.getExternalStorageDirectory()}$DEFAULT_DATA_REL_PATH$DEFAULT_FILE_NAME"
 
     init {
-        val mathQuestions = mutableListOf(
-            Quiz(
-                "What is the value of x in the equation 5x + 3 = 28?",
-                listOf("x = 5", "x = 6", "x = 12", "x = 8"),
-                0
-            ),
-            Quiz(
-                "If a circle has a radius of 10 centimeters, what is its circumference?",
-                listOf("20 cm", "31.42 cm", "62.83 cm", "40 cm"),
-                2
-            ),
-            Quiz(
-                "What is the value of 'a' in the equation 2a² - 5a + 3 = 0?",
-                listOf("2", "1", "3", "4"),
-                1
-            )
-        )
+        val file = File(filePath)
+        Log.i(TAG, "TopicRepository: file stored at $filePath")
+        if (!file.exists()) {
+            // cannot do here, no permissions on initial startup
+//            val fileWriter = FileWriter(filePath)
+//            fileWriter.write("[]")
+//            fileWriter.close()
+        } else {
+            readDataFile()
+        }
+    }
 
-        val physicsQuestions = mutableListOf(
-            Quiz(
-                "What is the unit of measurement for electric charge?",
-                listOf("Watts", "Volts", "Coulombs", "Joules"),
-                2
-            ),
-            Quiz(
-                "When an object is in free fall, what is the acceleration due to gravity?",
-                listOf("10 m/s²", "5.4 m/s²", "2 m/s²", "9.8 m/s²"),
-                3
-            ),
-            Quiz(
-                "What is the force experienced by an object of mass 10 kg when it is subjected to an acceleration of 5 m/s²?",
-                listOf(
-                    "10 N ",
-                    "50 N",
-                    "40 N",
-                    "80 N"),
-                1
-            )
-        )
+    private fun readDataFile() {
+        FileReader(filePath).use {
+            val text = it.readText()
 
-        val marvelQuestions = mutableListOf(
-            Quiz(
-                "How many Infinity stones are there?",
-                listOf("2", "3", "8", "6"),
-                3
-            ),
-            Quiz(
-                "What is the actor who plays Ironman?",
-                listOf("Tom Holland", "Robert Downy Jr.", "Scarlett Johansson", "Gabriel Macht"),
-                1
-            ),
-            Quiz(
-                "Which movie was the first movie of the MCU came out first",
-                listOf("Iron-man", "Shang-Chi", "Captain America: The First Avenger", "The Incredible Hulk"),
-                0
-            )
-        )
+            // deserialize JSON into Mutable list of topic objects, made sure to match names to make it easier
+            val topicsList: MutableList<Topic> =
+                Gson().fromJson(text, object : TypeToken<MutableList<Topic>>() {}.type)
 
-        val suitsQuestions = mutableListOf(
-            Quiz(
-                "What is the name of the law firm where most of the action in 'Suits' takes place?",
-                listOf("Pearson Hardman", "Specter Litt", "Zane Specter Litt Wheeler Williams", "Pearson Specter"),
-                3
-            ),
-            Quiz(
-                "What is the name of the character played by Gabriel Macht, who is a top attorney and one of the main protagonists in 'Suits'?",
-                listOf("Louis Litt", "Mike Ross", "Jessica Pearson", "Harvey Specter"),
-                3
-            ),
-            Quiz(
-                "In which city is the law firm in 'Suits' located?",
-                listOf("Chicago", "Los Angeles", "New York City", "Boston"),
-                2
-            )
-        )
+            // need to convert the correct answer to 0-based
+            for (i in 0..<topicsList.size) {
+                val questions = topicsList.get(i).questions
+                for (j in 0..<questions.size) {
+                    val question = questions.get(j)
+                    question.answer = question.answer - 1
+                }
+            }
 
-        topics = mutableListOf(
-            Topic(
-                MATH,
-                "Test your math skills with these challenges.",
-                "This quiz will test you on your math knowledge as well as your problem-solving abilities.",
-                mathQuestions,
-                R.drawable.math_icon
-            ),
-            Topic(
-                PHYSICS,
-                "Test your knowledge of physics fundamentals.",
-                "This quiz will test you on your physics knowledge as well as your problem-solving abilities.",
-                physicsQuestions,
-                R.drawable.physics_icon
-            ),
-            Topic(
-                MARVEL,
-                "Dive into the Marvel Universe with your favorite heroes.",
-                "This quiz will test your knowledge of the Marvel Universe and the super heroes that work to protect it",
-                marvelQuestions,
-                R.drawable.marvel_icon
-            ),
-            Topic(
-                SUITS,
-                "Suits is the best show out there.",
-                "This quiz will test your knowledge of the legal drama series 'Suits' and its characters.",
-                suitsQuestions,
-                R.drawable.suits_icon
-            )
-        )
+            topics = topicsList
+
+            Log.i(TAG, "TopicRepository: read the data the file, topics: $topics")
+        }
+    }
+
+    override fun updateData() {
+        readDataFile()
     }
 
     override fun getTopics(): List<Topic> {
@@ -135,4 +80,11 @@ class TopicRepositoryImpl : TopicRepository {
         return topics[topicIndex].questions[quizIndex]
     }
 
+    override fun saveTopic(newTopic: Topic) {
+        topics.add(newTopic)
+    }
+
+    override fun saveQuiz(topicIndex: Int, newQuiz: Quiz) {
+        topics[topicIndex].questions.add(newQuiz)
+    }
 }
