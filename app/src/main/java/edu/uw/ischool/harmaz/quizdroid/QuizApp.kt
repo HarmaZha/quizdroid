@@ -5,15 +5,20 @@ import android.util.Log
 
 // singleton because extending android.app.Application
 class QuizApp : Application() {
-    private val topicRepository: TopicRepository = TopicRepositoryImpl()
+    private lateinit var topicRepository: TopicRepository
 
     override fun onCreate() {
         super.onCreate()
+
+        topicRepository = TopicRepositoryImpl(this)
         Log.i(TAG, "QuizApp is loaded and being run.")
     }
 
     fun getTopicRepository(): TopicRepository {
-        Log.i(TAG, "TopicRepository instance.")
         return topicRepository
+    }
+
+    companion object {
+        const val TAG = "QuizApp"
     }
 }

@@ -2,6 +2,7 @@ package edu.uw.ischool.harmaz.quizdroid
 
 import android.os.Environment
 import android.util.Log
+import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.FileReader
@@ -20,7 +21,7 @@ data class Topic(var title: String, var desc: String, var questions: MutableList
 
 data class Quiz(var text: String, var answers: List<String>, var answer: Int)
 
-class TopicRepositoryImpl : TopicRepository {
+class TopicRepositoryImpl(private val context: Context) : TopicRepository {
     private var topics: MutableList<Topic>
 
     init {
